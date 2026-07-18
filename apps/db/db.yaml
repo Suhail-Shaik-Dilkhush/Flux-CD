@@ -1,0 +1,133 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: agefinder
+  labels:
+    app: agefinder
+
+---
+
+apiVersion: v1
+kind: Secret
+metadata:
+  name: agefinder-docker-secret
+  namespace: agefinder
+  labels:
+    app: agefinder
+    
+type: kubernetes.io/dockerconfigjson
+data:
+  .dockerconfigjson: ew0KICAgICJhdXRocyI6ew0KICAgICAgICJodHRwczovL2luZGV4LmRvY2tlci5pby92MS8iIDogew0KICAgICAgICAgICAgInVzZXJuYW1lIiA6ICJzaGFpa3N1aGFpbGRvY2tlciIsDQogICAgICAgICAgICAicGFzc3dvcmQiIDogImRja3JfcGF0XzlxcGdmSlpmSE1QMEl4VHpldTlCLWJxbE5IMCIsDQogICAgICAgICAgICAiYXV0aCIgOiAiYzJoaGFXdHpkV2hoYVd4a2IyTnJaWEk2WkdOcmNsOXdZWFJmT1hGd1oyWktXbVpJVFZBd1NYaFVlbVYxT1VJdFluRnNUa2d3Ig0KDQogICAgICAgIH0NCiAgICB9DQp9
+
+---
+
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: agefinder-pv
+  namespace: agefinder
+  labels:
+    app: agefinder
+spec:
+  capacity:
+    storage: 5Gi
+  accessModes:
+    - ReadWriteOnce
+  storageClassName: local-storage
+  persistentVolumeReclaimPolicy : Retain
+  local:
+    path: /mnt/aire-db
+  nodeAffinity:
+    required:
+      nodeSelectorTerms:
+        - matchExpressions:
+          - key: kubernetes.io/hostname
+            operator: In
+            values:
+              - shaik-terraform-lab-vm
+
+---
+
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: agefinder-pvc
+  namespace: agefinder
+  labels:
+    app: agefinder
+spec:
+  accessModes:
+    - ReadWriteOnce
+  storageClassName: local-storage
+  resources:
+    requests:
+      storage: 5Gi
+
+---
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: agefinder-deploy
+  namespace: agefinder
+  labels:
+    app: agefinder
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: agefinder
+  template:
+    metadata:
+      name: agefinder-pod
+      namespace: agefinder
+      labels:
+        app: agefinder
+    spec:
+      imagePullSecrets: 
+        - name: agefinder-docker-secret
+      containers:
+        - name: agefinder-db
+          imagePullPolicy: Always
+          image: shaiksuhaildocker/aire-db
+          args: ["--bind_ip_all", "--dbpath=/mnt/aire-db", "--journal"]
+          lifecycle:
+            prestop:
+              exec:
+                command: ["/bin/sh", "-c", "mongod --shutdown --dbpath=/db/demodb"]
+          volumeMounts: 
+            - name: "db" 
+              mountPath: "/db/demodb"
+          resources:
+            limits:
+              memory: "512Mi"
+              cpu: "500m"
+          ports:
+            - name: db-port
+              containerPort: 27017
+      volumes:
+        - name: "db"
+          persistentVolumeClaim: 
+            ClaimName: "agefinder-pvc"
+
+---
+
+apiVersion: v1
+kind: Service
+metadata:
+  name: agefinder-svc
+  namespace: agefinder
+  labels:
+    app: agefinder
+spec:
+  type: ClusterIP
+  selector: 
+    app: agefinder
+    namespace: agefinder
+  ports:
+   - port: 27017
+     targetPort: 27017
+          
+        
+
+

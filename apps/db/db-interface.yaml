@@ -1,0 +1,83 @@
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: agefinder-dbinterface-secret
+  namespace: agefinder
+  labels:
+    app: agefinder
+type: Opaque
+data: 
+  dbusername: YXBwVXNlcg==
+  dbpassword: YXBwVXNlcg==
+  dbname: ZGVtb2Ri
+  dbcollection: ZGVtb2NvbGxlY3Rpb24=
+  dbport: MTUwMDA=
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: agefinder-dbinterface-deploy
+  namespace: agefinder
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: agefinder-dbinterface
+  template:
+    metadata:
+      namespace: agefinder
+      labels:
+        app: agefinder-dbinterface
+        namespace: agefinder
+    spec:
+      imagePullSecrets:
+        - name: agefinder-docker-secret
+      containers:
+      - name: agefinder-dbinterface
+        image: shaiksuhaildocker/aire-dbinterface
+        imagePullPolicy: Always
+        env:
+          - name: DB_PORT
+            valueFrom: 
+              secretKeyRef:
+                name: agefinder-dbinterface-secret
+                key: dbport
+          - name: DB_USER
+            valueFrom: 
+              secretKeyRef:
+                name: agefinder-dbinterface-secret
+                key: dbusername
+          - name: DB_PASS
+            valueFrom: 
+              secretKeyRef:
+                name: agefinder-dbinterface-secret
+                key: dbpassword
+          - name: DB_COLLECTION
+            valueFrom: 
+              secretKeyRef:
+                name: agefinder-dbinterface-secret
+                key: dbcollection          
+        resources:
+          limits:
+            memory: "512Mi"
+            cpu: "500m"
+        ports:
+        - containerPort: 15000
+          name: db-interfaceport
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: dbinterface-service
+  namespace: agefinder
+spec:
+  type: ClusterIP
+  selector:
+    app: agefinder-dbinterface
+    namespace: agefinder
+  ports:
+  - port: 15000
+    targetPort: 15000
