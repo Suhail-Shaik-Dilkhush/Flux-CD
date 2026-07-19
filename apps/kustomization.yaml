@@ -1,4 +1,4 @@
 resources:
   - db
   - backend
-  - frontned
+  - frontend
