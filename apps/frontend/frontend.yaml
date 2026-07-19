@@ -1,0 +1,81 @@
+---
+
+apiVersion : v1
+kind: ConfigMap
+metadata:
+  name: frontend-cm
+  namespace: agefinder
+  labels:
+    app: agefinder
+data:
+  appport:  "15000"
+  sessionname: "Workflow and GitOps"
+
+
+
+---
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: frontend-deploy
+  namespace: agefinder
+  labels:
+    app: agefinder
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      pod: frontend
+  template:
+    metadata:
+       name: agefinder-frontend
+       namespace: agefinder
+       labels:
+        pod: frontend
+        app: agefinder
+    spec:
+      imagePullSecrets: 
+          - name: agefinder-docker-secret
+      containers:
+        - name: frontend
+          imagePullPolicy: Always
+          image: shaiksuhaildocker/aire-frontend
+          ports:
+            - name: frontend-port
+              containerPort: 15000
+          env:
+            - name: APPPORT
+              valueFrom:
+                configMapKeyRef:
+                  name: frontend-cm
+                  key: appport
+            - name: SESSIONNAME
+              valueFrom:
+                configMapKeyRef:
+                  name: frontend-cm
+                  key: sessionname
+          resources:
+            requests:
+              memory : "128Mi"
+              cpu: "100m"
+            limits:
+              memory: "256Mi"
+              cpu: "200m"
+---
+
+apiVersion: v1
+kind: Service
+metadata:
+  name: frontend-svc
+  namespace: agefinder
+  labels:
+    app: agefinder
+spec:
+  type: NodePort
+  selector:
+    pod: frontend
+  ports:
+    - port: 15000
+      targetPort: 15000
+            

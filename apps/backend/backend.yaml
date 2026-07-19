@@ -1,0 +1,86 @@
+---
+
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: backend-cm
+  namespace: agefinder
+  labels:
+    app: agefinder
+data:
+  appport: "15000"
+  apiserverhost: "http://10.131.109.12"
+  apiserverport: "7171"
+  
+---
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  namespace: agefinder
+  name: backend-deploy
+  labels:
+    app: agefinder
+spec:
+  replicas: 2
+  selector:
+    matchLabels:  
+      pod: backend
+  template:
+    metadata:
+      name: backend-pod
+      namespace: agefinder
+      labels:
+        pod: backend
+        app: agefinder
+    spec: 
+      imagePullSecrets:
+        - name: agefinder-docker-secret
+      containers:
+        - name: backend
+          imagePullPolicy: Always
+          image: shaiksuhaildocker/aire-backend
+          env:
+            - name: APPPORT
+              valueFrom:
+                configMapKeyRef:
+                  name: backend-cm
+                  key: appport
+            - name: APISERVERHOST
+              valueFrom:
+                configMapKeyRef:
+                  name: backend-cm
+                  key: apiserverhost
+            - name: APISERVERPORT
+              valueFrom:
+                configMapKeyRef:
+                  name: backend-cm
+                  key: apiserverport
+          resources:
+            requests:
+              memory: "128Mi"
+              cpu: "100m"
+            limits:
+              memory: "256Mi"
+              cpu: "250m"
+          ports:
+            - name: backend
+              containerPort: 15000
+
+---
+
+apiVersion: v1
+kind: Service
+metadata:
+  namespace: agefinder
+  name: backend-svc
+  labels:
+    app: agefinder
+spec:
+  selector:
+    pod: backend
+  ports:
+    - port: 15000
+      targetPort: 15000
+
+    
