@@ -6,7 +6,7 @@ metadata:
 spec:
   sourceRef:
     kind: GitRepository
-    name: agefinder
+    name: flux-system
   path: ./apps
   interval: 1m
   prune: true
