@@ -58,14 +58,19 @@ spec:
             valueFrom: 
               secretKeyRef:
                 name: agefinder-dbinterface-secret
-                key: dbcollection          
+                key: dbcollection     
+          - name: DB_NAME
+            valueFrom:
+              secretKeyRef:
+                name: agefinder-dbinterface-secret
+                key: dbport
         resources:
           limits:
             memory: "512Mi"
             cpu: "500m"
         ports:
         - containerPort: 15000
-          name: db-interfaceport
+          name: interface-port
 
 ---
 apiVersion: v1

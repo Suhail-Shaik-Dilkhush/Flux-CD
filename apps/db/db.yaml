@@ -90,9 +90,9 @@ spec:
         - name: agefinder-db
           imagePullPolicy: Always
           image: shaiksuhaildocker/aire-db
-          args: ["--bind_ip_all", "--dbpath=/mnt/aire-db", "--journal"]
+          args: ["--bind_ip_all", "--dbpath=/db/demodb", "--journal"]
           lifecycle:
-            prestop:
+            preStop:
               exec:
                 command: ["/bin/sh", "-c", "mongod --shutdown --dbpath=/db/demodb"]
           volumeMounts: 
@@ -108,14 +108,14 @@ spec:
       volumes:
         - name: "db"
           persistentVolumeClaim: 
-            ClaimName: "agefinder-pvc"
+            claimName: "agefinder-pvc"
 
 ---
 
 apiVersion: v1
 kind: Service
 metadata:
-  name: agefinder-svc
+  name: demodb-service
   namespace: agefinder
   labels:
     app: agefinder
